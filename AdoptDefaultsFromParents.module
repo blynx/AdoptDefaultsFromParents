@@ -1,0 +1,79 @@
+<?php // namespace ProcessWire;
+
+class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableModule { 
+
+  public static function getModuleInfo() {
+    return array(
+      'title' => 'AdoptDefaultsFromParents',
+      'version' => 001,
+      'author' => 'Steffen Henschel',
+      'summary' => 'Fills fields of new pages with corresponding values of their parents.',
+      'href' => '',
+      'autoload' => true,
+      'singular' => true
+      );
+  }
+
+  // public function __construct() {}
+
+  public function ready() {
+    $this->pages->addHookAfter('Pages::added', $this, 'adoptDefaults');
+  }
+
+  /**
+   * [adoptDefaults description]
+   * @param  [type] $event [description]
+   * @return [type]        [description]
+   */
+  public function adoptDefaults($event) {
+
+    $page = $event->arguments(0);
+    $parent = $page->parent;
+
+    $adoptingFields = $this->adopting_fields; // array of field names
+    $givingTemplates = $this->giving_templates; // array of template ids
+
+    $of = $page->of();
+    $page->of(false);
+
+    foreach ($page->data as $fName => $fValue) {
+      if ($parent->$fName != "" && in_array($fName, $adoptingFields) && in_array($parent->template->id, $givingTemplates)) {
+        $page->set($fName, $parent->$fName);
+      }
+    }
+
+    $page->save();
+    $page->of($of);
+
+  }
+
+  public function getModuleConfigInputfields($data) {
+
+    $inputfields = new InputfieldWrapper();
+
+    $field = wire('modules')->get("InputfieldAsmSelect");
+    $field->name = "giving_templates";
+    $field->label = __("Giving templates");
+    $field->description = __("Choose those templates, that can give field values to their newly added children.");
+    foreach (wire('templates')->getAll() as $key => $template) {
+      $field->addOption($key, $template);
+    }
+    if (isset($data['giving_templates'])) $field->value = $data['giving_templates'];
+    $inputfields->add($field);
+
+    $field = wire('modules')->get('InputfieldAsmSelect');
+    $field->name = 'adopting_fields';
+    $field->label = __("Adopting fields");
+    $field->description = __("Fields that can adopt default values from parent template / page");
+    foreach (wire('fields')->getAll() as $f) {
+      $field->addOption($f->name, $f->title);
+    }
+    if(isset($data['adopting_fields'])) $field->value = $data['adopting_fields'];
+    $inputfields->add($field); 
+
+    return $inputfields;
+  }
+  
+}
+
+?>
