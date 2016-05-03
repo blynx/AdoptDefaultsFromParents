@@ -4,17 +4,15 @@ class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableM
 
   public static function getModuleInfo() {
     return array(
-      'title' => 'AdoptDefaultsFromParents',
-      'version' => 001,
+      'title' => 'Adopt field values as defaults from parents',
+      'version' => 002,
       'author' => 'Steffen Henschel',
-      'summary' => 'Fills fields of new pages with corresponding values of their parents.',
+      'summary' => 'Fills fields of newly added pages with corresponding field-values of their parents. Configurable by setting "giving templates" and "adopting fields".',
       'href' => '',
       'autoload' => true,
       'singular' => true
       );
   }
-
-  // public function __construct() {}
 
   public function ready() {
     $this->pages->addHookAfter('Pages::added', $this, 'adoptDefaults');
@@ -33,15 +31,22 @@ class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableM
     $adoptingFields = $this->adopting_fields; // array of field names
     $givingTemplates = $this->giving_templates; // array of template ids
 
+    // save outputformatting state
+    // and set to false
     $of = $page->of();
     $page->of(false);
 
     foreach ($page->data as $fName => $fValue) {
+      // check if parents field has value
+      // also constrain to allowed adopting fields and giving templates
+      // finally set the field value
       if ($parent->$fName != "" && in_array($fName, $adoptingFields) && in_array($parent->template->id, $givingTemplates)) {
         $page->set($fName, $parent->$fName);
       }
     }
 
+    // save page
+    // and re-set of to initial state
     $page->save();
     $page->of($of);
 
