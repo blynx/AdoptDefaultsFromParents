@@ -16,3 +16,7 @@ http://modules.processwire.com/install-uninstall/
 ## How to use
 
 In the configuration of this module you have to set templates which are able to give field values and fields which are able to receive values. Then, this module automatically applies field values to every newly added page from their parents according to those settings.
+
+## Namespace for Processwire 3
+
+Namespace is commented out for now, since I use this module in a 2.7 installation. Feel free to uncomment the namespace declaration.
