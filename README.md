@@ -1,5 +1,5 @@
 # AdoptDefaultsFromParents
-Fills fields of new pages with corresponding values of their parents.
+Automatically fills fields of new pages with corresponding values of their parents.
 
 ## Installation
 
@@ -16,3 +16,6 @@ http://modules.processwire.com/install-uninstall/
 ## How to use
 
 In the configuration of this module you have to set templates which are able to give field values and fields which are able to receive values. Then, this module automatically applies field values to every newly added page from their parents according to those settings.
+
+Additionally you may switch between the immediate parent or the closest parent which has the wanted field.
+... Might be usefull, but I am not sure ...

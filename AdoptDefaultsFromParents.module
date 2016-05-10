@@ -1,11 +1,15 @@
 <?php // namespace ProcessWire;
 
+/**
+ * 
+ */
+
 class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableModule { 
 
   public static function getModuleInfo() {
     return array(
       'title' => 'Adopt field values as defaults from parents',
-      'version' => 002,
+      'version' => 003,
       'author' => 'Steffen Henschel',
       'summary' => 'Fills fields of newly added pages with corresponding field-values of their parents. Configurable by setting "giving templates" and "adopting fields".',
       'href' => '',
@@ -36,12 +40,26 @@ class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableM
     $of = $page->of();
     $page->of(false);
 
-    foreach ($page->data as $fName => $fValue) {
-      // check if parents field has value
-      // also constrain to allowed adopting fields and giving templates
-      // finally set the field value
-      if ($parent->$fName != "" && in_array($fName, $adoptingFields) && in_array($parent->template->id, $givingTemplates)) {
-        $page->set($fName, $parent->$fName);
+    foreach ($page->data as $f => $fValue) {
+      // constrain to allowed adopting fields first
+      if (in_array($f, $adoptingFields)) {
+        switch ($this->data['parent_mode']) {
+
+          case 'immediate':
+            // field not empty & parent is allowed by template
+            if ($parent->$f != "" && in_array($parent->template->id, $givingTemplates)) {
+              $page->set($f, $parent->$f);
+            }
+            break;
+
+          case 'closest':
+            $closestParent = $page->closest("{$f}!=''");
+            // parent is allowed by template
+            if (get_class($closestParent) != "NullPage" && in_array($closestParent->template->id, $givingTemplates)) {
+              $page->set($f, $closestParent->$f);
+            }
+            break;
+        }
       }
     }
 
@@ -56,10 +74,23 @@ class AdoptDefaultsFromParents extends WireData implements Module, ConfigurableM
 
     $inputfields = new InputfieldWrapper();
 
+    $field = wire('modules')->get("InputfieldRadios");
+    $field->name = "parent_mode";
+    $field->label = __("Which parent?");
+    $field->description = __('If set to "Immediate parent", only the direct parents will be called. If set to "Closest parent" the next parent which has "that field" will be called.');
+    $field->addOption("immediate", __("Immediate parent"));
+    $field->addOption("closest", __("Closest parent"));
+    if (isset($data['parent_mode'])) {
+      $field->value = $data['parent_mode'];
+    } else {
+      $field->value = "immediate";
+    }
+    $inputfields->add($field);
+
     $field = wire('modules')->get("InputfieldAsmSelect");
     $field->name = "giving_templates";
     $field->label = __("Giving templates");
-    $field->description = __("Choose those templates, that can give field values to their newly added children.");
+    $field->description = __("Choose those templates, which may give field values to their newly added children.");
     foreach (wire('templates')->getAll() as $key => $template) {
       $field->addOption($key, $template);
     }
